@@ -1,0 +1,12 @@
+rules:
+  - id: node-command-injection-demo
+    message: "Учебное правило: пользовательский ввод передается в child_process.exec. Используйте execFile/spawn с массивом аргументов и валидацией."
+    severity: ERROR
+    languages: [javascript]
+    pattern: childProcess.exec('nslookup ' + $X, ...)
+  - id: demo-secret-js
+    message: "Учебное правило: найден псевдосекрет DEMO_SECRET."
+    severity: WARNING
+    languages: [javascript]
+    pattern-regex: >
+      DEMO_SECRET\s*=\s*['"][A-Za-z0-9_-]{12,}['"]

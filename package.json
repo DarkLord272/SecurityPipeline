@@ -1,0 +1,17 @@
+{
+  "name": "security-pipeline-mineev-ns",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Educational GitHub security pipeline example",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test/smoke.test.js"
+  },
+  "dependencies": {
+    "express": "4.17.1",
+    "lodash": "4.17.15",
+    "minimist": "0.0.8"
+  },
+  "devDependencies": {}
+}
