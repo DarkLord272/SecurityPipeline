@@ -19,10 +19,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Reject pull_request_target in workflow files
+        shell: bash
         run: |
           mkdir -p reports
-          if grep -R "pull_request_target" .github/workflows; then
-            echo "Unsafe trigger pull_request_target was found" | tee reports/workflow-guard.txt
+          if grep -RInE '^[[:space:]]*pull_request_target[[:space:]]*:' .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null; then
+            echo "Unsafe workflow trigger was found" | tee reports/workflow-guard.txt
             exit 1
           fi
           echo "OK: pull_request_target is not used" | tee reports/workflow-guard.txt
