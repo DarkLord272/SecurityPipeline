@@ -1,0 +1,80 @@
+name: PR-safe security pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  guard-workflow-event:
+    name: Check unsafe workflow triggers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Reject pull_request_target in workflow files
+        run: |
+          mkdir -p reports
+          if grep -R "pull_request_target" .github/workflows; then
+            echo "Unsafe trigger pull_request_target was found" | tee reports/workflow-guard.txt
+            exit 1
+          fi
+          echo "OK: pull_request_target is not used" | tee reports/workflow-guard.txt
+      - name: Upload workflow guard report
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-guard-mineev
+          path: reports/workflow-guard.txt
+
+  node-security:
+    name: Node.js SCA and Semgrep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies without running scripts
+        run: npm install --ignore-scripts
+      - name: Run npm audit
+        run: |
+          mkdir -p reports
+          npm audit --json > reports/npm-audit.json || true
+      - name: Install Semgrep and detect-secrets
+        run: python -m pip install --upgrade semgrep detect-secrets
+      - name: Run Semgrep custom rules
+        run: semgrep scan --config semgrep/rules.yml --json --output reports/semgrep.json || true
+      - name: Run detect-secrets
+        run: detect-secrets scan . > reports/detect-secrets.json || true
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports-mineev
+          path: reports/
+
+  codeql:
+    name: CodeQL JavaScript analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
